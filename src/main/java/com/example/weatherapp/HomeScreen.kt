@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import java.text.SimpleDateFormat
@@ -57,6 +58,7 @@ fun HomeScreen(navController: NavHostController) {
         // Background based on weather condition
         val backgroundImage = when {
             weather.condition.contains("clear", ignoreCase = true) -> R.drawable.clear
+            weather.condition.contains("sunny", ignoreCase = true) -> R.drawable.sunny
             weather.condition.contains("snow", ignoreCase = true) -> R.drawable.snow
             weather.condition.contains("rain", ignoreCase = true) -> R.drawable.rainy
             weather.condition.contains("fog", ignoreCase = true) -> R.drawable.fog
@@ -68,7 +70,6 @@ fun HomeScreen(navController: NavHostController) {
             weather.condition.equals("partly cloudy", ignoreCase = true) -> R.drawable.cloudy
 
 
-            // Exact match for partly cloudy
 
 
             else -> R.drawable.clear
@@ -223,7 +224,7 @@ fun HomeScreen(navController: NavHostController) {
 
 
             // 7 Days Daily Weather Forecast Section
-            DailyWeatherForecast()
+            DailyWeatherForecast(navController)
 
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -399,19 +400,19 @@ fun formatTemperature(temperature: String, tempUnit: String): String {
 
 
 @Composable
-fun DailyWeatherForecast() {
+fun DailyWeatherForecast(navController: NavController) {
     var dailyWeatherList by remember { mutableStateOf<List<DailyWeather>>(emptyList()) }
     var tempUnit by remember { mutableStateOf("Celsius") }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
+    var city by remember { mutableStateOf("") } // Store the city name
 
     // Fetch data when the component is launched
     LaunchedEffect(Unit) {
         try {
             val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
             tempUnit = fetchUnit(userId) // Fetch temperature unit from Firestore
-            val city = getCityFromFirebase() // Get city name from Firebase
+            city = getCityFromFirebase() // Get city name from Firebase
             dailyWeatherList = fetch7DayForecast(city, tempUnit)
         } catch (e: Exception) {
             errorMessage = "Failed to load weather data: ${e.localizedMessage}"
@@ -419,7 +420,6 @@ fun DailyWeatherForecast() {
             isLoading = false
         }
     }
-
 
     Column(
         modifier = Modifier
@@ -434,16 +434,13 @@ fun DailyWeatherForecast() {
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.padding(16.dp))
         }
 
-
         errorMessage?.let {
             Text(text = it, color = Color.Red, modifier = Modifier.padding(16.dp))
         }
-
 
         if (!isLoading && dailyWeatherList.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -451,9 +448,9 @@ fun DailyWeatherForecast() {
                     DailyWeatherItem(
                         date = dailyWeather.date,
                         iconRes = getWeatherIcon(dailyWeather.condition),
-                        temperature = formatTemperature(dailyWeather.temperature, tempUnit), // Fix here
+                        temperature = formatTemperature(dailyWeather.temperature, tempUnit),
                         onClick = {
-                            Log.d("WeatherApp", "Clicked on ${dailyWeather.date}")
+                            navController.navigate("daily_details/${city}/${dailyWeather.date}")
                         }
                     )
                 }
@@ -485,7 +482,7 @@ fun DailyWeatherItem(date: String, iconRes: Int, temperature: String, onClick: (
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(Color.White.copy(alpha = 0.2f))
-            .clickable { onClick() } // ✅ Make row clickable
+            .clickable { onClick() }
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween

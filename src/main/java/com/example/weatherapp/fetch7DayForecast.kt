@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 suspend fun fetch7DayForecast(city: String, tempUnit: String): List<DailyWeather> {
     val client = OkHttpClient()
-    val apiKey = "06c121bc7bec4a3ca01141936250502" // Replace with your API key
+    val apiKey = "3b355c17a0634f28950165400250603" // Replace with your API key
     val url = "http://api.weatherapi.com/v1/forecast.json?key=$apiKey&q=$city&days=8&aqi=no&alerts=yes" // `days=7` for 7-day forecast
     val request = Request.Builder().url(url).build()
 

@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import java.text.SimpleDateFormat
@@ -52,6 +53,7 @@ fun SavedCityScreen(navController: NavHostController, cityName: String) {
         // Background based on weather condition
         val backgroundImage = when {
             weather.condition.contains("clear", ignoreCase = true) -> R.drawable.clear
+            weather.condition.contains("sunny", ignoreCase = true) -> R.drawable.sunny
             weather.condition.contains("snow", ignoreCase = true) -> R.drawable.snow
             weather.condition.contains("rain", ignoreCase = true) -> R.drawable.rainy
             weather.condition.contains("fog", ignoreCase = true) -> R.drawable.fog
@@ -210,7 +212,7 @@ fun SavedCityScreen(navController: NavHostController, cityName: String) {
             Spacer(modifier = Modifier.height(32.dp))
 
             // 7 Days Daily Weather Forecast Section
-            SavedDailyWeatherForecast(cityName, userId)
+            SavedDailyWeatherForecast(navController,cityName, userId)
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -377,27 +379,24 @@ fun SavedformatTemperature(temperature: String, tempUnit: String): String {
 }
 
 @Composable
-fun SavedDailyWeatherForecast(cityName:String,userId: String) {
+fun SavedDailyWeatherForecast(navController: NavController, cityName: String, userId: String) {
     var dailyWeatherList by remember { mutableStateOf<List<DailyWeather>>(emptyList()) }
     var tempUnit by remember { mutableStateOf("Celsius") }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
 
     // Fetch data when the component is launched
     LaunchedEffect(Unit) {
         try {
             val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
             tempUnit = fetchUnit(userId) // Fetch temperature unit from Firestore
-            val city = cityName // Get city name from Firebase
-            dailyWeatherList = fetch7DayForecast(city, tempUnit)
+            dailyWeatherList = fetch7DayForecast(cityName, tempUnit) // Fetch weather for the given city
         } catch (e: Exception) {
             errorMessage = "Failed to load weather data: ${e.localizedMessage}"
         } finally {
             isLoading = false
         }
     }
-
 
     Column(
         modifier = Modifier
@@ -412,26 +411,23 @@ fun SavedDailyWeatherForecast(cityName:String,userId: String) {
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.padding(16.dp))
         }
-
 
         errorMessage?.let {
             Text(text = it, color = Color.Red, modifier = Modifier.padding(16.dp))
         }
 
-
         if (!isLoading && dailyWeatherList.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 dailyWeatherList.forEach { dailyWeather ->
-                    DailyWeatherItem(
+                    SavedDailyWeatherItem(
                         date = dailyWeather.date,
                         iconRes = getWeatherIcon(dailyWeather.condition),
-                        temperature = SavedformatTemperature(dailyWeather.temperature, tempUnit), // Fix here
+                        temperature = SavedformatTemperature(dailyWeather.temperature, tempUnit),
                         onClick = {
-                            Log.d("WeatherApp", "Clicked on ${dailyWeather.date}")
+                            navController.navigate("daily_details/${cityName}/${dailyWeather.date}")
                         }
                     )
                 }
@@ -439,6 +435,7 @@ fun SavedDailyWeatherForecast(cityName:String,userId: String) {
         }
     }
 }
+
 
 
 

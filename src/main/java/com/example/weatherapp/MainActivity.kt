@@ -48,6 +48,12 @@ class MainActivity : ComponentActivity() {
                     val city = backStackEntry.arguments?.getString("city") ?: ""
                     SavedCityScreen(navController, city)
                 }
+
+                composable("daily_details/{city}/{date}") { backStackEntry ->
+                    val city = backStackEntry.arguments?.getString("city") ?: ""
+                    val date = backStackEntry.arguments?.getString("date") ?: ""
+                    DailyDetails(navController,city, date)
+                }
             }
         }
     }
